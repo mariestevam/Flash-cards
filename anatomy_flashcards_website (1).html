@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AnatoCards - Flashcards de Anatomia Humana</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* 3D Card Flip Styles */
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+
+        .transform-style-3d {
+            transform-style: preserve-3d;
+        }
+
+        .backface-hidden {
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+
+        .rotate-y-180 {
+            transform: rotateY(180deg);
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between selection:bg-teal-500 selection:text-white">
+
+    <!-- Header / Navbar -->
+    <header class="bg-slate-800/80 backdrop-blur-md border-b border-slate-700/60 sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex flex-col md:flex-row justify-between items-center gap-3">
+            <div class="flex items-center gap-3">
+                <div class="bg-teal-500/10 text-teal-400 p-2.5 rounded-xl border border-teal-500/20">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-xl tracking-tight text-white flex items-center gap-2">
+                        AnatoCards <span class="bg-teal-500/20 text-teal-300 text-xs px-2 py-0.5 rounded-full border border-teal-500/30">Anatomia</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">Preparatório Completo para Prova Prática & Teórica</p>
+                </div>
+            </div>
+
+            <!-- View Toggle & Stats -->
+            <div class="flex items-center gap-4">
+                <div class="text-right hidden sm:block">
+                    <div class="text-xs text-slate-400">Domínio Global</div>
+                    <div class="text-sm font-bold text-teal-400" id="global-progress-text">0 / 217 (0%)</div>
+                </div>
+                
+                <div class="bg-slate-900/80 p-1 rounded-xl border border-slate-700 flex gap-1">
+                    <button id="view-cards-btn" onclick="setViewMode('cards')" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-teal-500 text-white transition-all shadow-sm">
+                        📇 Flashcards
+                    </button>
+                    <button id="view-list-btn" onclick="setViewMode('list')" class="px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all">
+                        📋 Lista (217)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="max-w-4xl mx-auto w-full px-4 py-6 flex-1 flex flex-col">
+        
+        <!-- Filter Pills & Search Container -->
+        <div class="mb-6 flex flex-col gap-3">
+            <!-- Categories Buttons -->
+            <div class="flex flex-wrap gap-2 justify-center sm:justify-start" id="category-filters">
+                <!-- Dynamically populated buttons -->
+            </div>
+
+            <!-- Global Search (For List View) -->
+            <div id="search-container" class="hidden">
+                <div class="relative">
+                    <input type="text" id="search-input" oninput="handleSearch()" placeholder="Pesquisar fêmur, crânio, sagittal, articulação..." 
+                           class="w-full bg-slate-800 border border-slate-700 text-slate-100 text-sm rounded-xl px-4 py-3 pl-10 focus:outline-none focus:border-teal-500 transition-colors">
+                    <svg class="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- FLASHCARD STUDY VIEW -->
+        <div id="cards-view" class="flex-1 flex flex-col items-center justify-between gap-6">
+            
+            <!-- Deck Progress & Meta Info -->
+            <div class="w-full flex justify-between items-center text-xs font-medium text-slate-400 px-2">
+                <span id="card-counter">Cartão 1 de 15</span>
+                <span id="card-mastered-status" class="flex items-center gap-1">
+                    <!-- Status dynamic -->
+                </span>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden border border-slate-700/50">
+                <div id="deck-progress-bar" class="bg-gradient-to-r from-teal-500 to-emerald-400 h-full w-0 transition-all duration-300"></div>
+            </div>
+
+            <!-- The 3D Flashcard Container -->
+            <div class="w-full max-w-xl h-80 sm:h-96 perspective-1000 cursor-pointer group" onclick="flipCard()">
+                <div id="flashcard-inner" class="w-full h-full relative transform-style-3d transition-transform duration-500 shadow-2xl rounded-3xl border border-slate-700 bg-slate-800">
+                    
+                    <!-- FRONT OF CARD -->
+                    <div class="absolute inset-0 w-full h-full backface-hidden rounded-3xl p-6 sm:p-8 flex flex-col justify-between bg-gradient-to-br from-slate-800 via-slate-800/90 to-slate-900 border border-slate-700/80">
+                        <div class="flex justify-between items-start">
+                            <span id="card-front-category" class="px-3 py-1 bg-teal-500/10 text-teal-400 text-xs font-semibold rounded-full border border-teal-500/20">
+                                Categoria
+                            </span>
+                            <span class="text-xs text-slate-500 font-mono" id="card-id-front">#1</span>
+                        </div>
+
+                        <div class="my-auto text-center px-4">
+                            <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Pergunta</p>
+                            <h2 id="card-front-text" class="text-xl sm:text-2xl font-bold text-white leading-relaxed">
+                                Carregando pergunta...
+                            </h2>
+                        </div>
+
+                        <div class="flex items-center justify-center gap-2 text-xs text-slate-400 group-hover:text-teal-400 transition-colors">
+                            <svg class="w-4 h-4 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                            <span>Clique ou pressione <b>Espaço</b> para ver a resposta</span>
+                        </div>
+                    </div>
+
+                    <!-- BACK OF CARD -->
+                    <div class="absolute inset-0 w-full h-full backface-hidden rotate-y-180 rounded-3xl p-6 sm:p-8 flex flex-col justify-between bg-gradient-to-br from-slate-850 via-slate-800 to-teal-950/40 border border-teal-500/40">
+                        <div class="flex justify-between items-start">
+                            <span id="card-back-category" class="px-3 py-1 bg-emerald-500/10 text-emerald-400 text-xs font-semibold rounded-full border border-emerald-500/20">
+                                Resposta
+                            </span>
+                            <span class="text-xs text-slate-500 font-mono" id="card-id-back">#1</span>
+                        </div>
+
+                        <div class="my-auto text-center px-2 sm:px-4">
+                            <p class="text-xs font-bold text-emerald-400 uppercase tracking-widest mb-2">Resposta Correta</p>
+                            <p id="card-back-text" class="text-base sm:text-xl font-medium text-slate-100 leading-relaxed">
+                                Carregando resposta...
+                            </p>
+                        </div>
+
+                        <div class="flex justify-center text-xs text-slate-500">
+                            <span>Toque novamente para voltar</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Interactive Action Controls -->
+            <div class="w-full max-w-xl flex flex-col gap-3">
+                
+                <!-- Main Response Buttons: Errei, Revisar, Acertei -->
+                <div class="grid grid-cols-3 gap-2 sm:gap-3">
+                    <button onclick="markWrong()" class="py-3 px-2 sm:px-4 bg-rose-500/10 hover:bg-rose-500/20 active:bg-rose-500/30 text-rose-400 font-bold text-xs sm:text-sm rounded-xl border border-rose-500/30 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 transition-all shadow-sm active:scale-95">
+                        <span class="text-base sm:text-lg">❌</span>
+                        <span>Errei</span>
+                    </button>
+
+                    <button onclick="markReview()" class="py-3 px-2 sm:px-4 bg-amber-500/10 hover:bg-amber-500/20 active:bg-amber-500/30 text-amber-400 font-bold text-xs sm:text-sm rounded-xl border border-amber-500/30 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 transition-all shadow-sm active:scale-95">
+                        <span class="text-base sm:text-lg">🔄</span>
+                        <span>Revisar</span>
+                    </button>
+
+                    <button onclick="markCorrect()" class="py-3 px-2 sm:px-4 bg-emerald-500/10 hover:bg-emerald-500/20 active:bg-emerald-500/30 text-emerald-400 font-bold text-xs sm:text-sm rounded-xl border border-emerald-500/30 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 transition-all shadow-sm active:scale-95">
+                        <span class="text-base sm:text-lg">✅</span>
+                        <span>Acertei</span>
+                    </button>
+                </div>
+
+                <!-- Secondary Nav: Prev / Next & Pool Counter -->
+                <div class="flex items-center justify-between gap-3 pt-1">
+                    <button onclick="prevCard()" class="flex-1 py-2 px-3 bg-slate-800 hover:bg-slate-700 active:bg-slate-900 text-slate-300 font-medium text-xs rounded-xl border border-slate-700 flex items-center justify-center gap-1.5 transition-all">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                        <span>Anterior</span>
+                    </button>
+
+                    <span id="deck-queue-info" class="text-xs text-slate-400 font-mono text-center px-2">
+                        Bolo: 0 cartões
+                    </span>
+
+                    <button onclick="nextCard()" class="flex-1 py-2 px-3 bg-slate-800 hover:bg-slate-700 active:bg-slate-900 text-slate-300 font-medium text-xs rounded-xl border border-slate-700 flex items-center justify-center gap-1.5 transition-all">
+                        <span>Próximo</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </button>
+                </div>
+
+                <!-- Secondary Actions: Shuffle & Keyboard Hints -->
+                <div class="flex justify-between items-center px-1 text-xs text-slate-400 pt-1">
+                    <button onclick="shuffleDeck()" class="hover:text-teal-400 flex items-center gap-1 py-1 transition-colors">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        Embaralhar Módulo
+                    </button>
+
+                    <div class="hidden md:flex gap-3 text-slate-500 font-mono text-[11px]">
+                        <span>1: Errei</span>
+                        <span>2: Revisar</span>
+                        <span>3: Acertei</span>
+                        <span>Espaço: Girar</span>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- LIST VIEW -->
+        <div id="list-view" class="hidden flex-1">
+            <div id="list-results-info" class="mb-4 text-xs text-slate-400 font-medium"></div>
+            <div id="cards-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Dynamically generated list cards -->
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-950 border-t border-slate-800 py-4 text-center text-xs text-slate-500">
+        <div class="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-2">
+            <p>AnatoCards &copy; 2026 — Desenvolvido por <span class="text-teal-400 font-semibold">Mariana Estevam Martins</span></p>
+            <p>217 Flashcards Organizados por 6 Módulos</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // Data Set: All 217 Anatomy Flashcards
+        const RAW_DATA = [
+            // INTRODUÇÃO À ANATOMIA (1-15)
+            { id: 1, category: "Introdução à Anatomia", front: "O que é Anatomia Humana?", back: "É o estudo da estrutura do corpo humano." },
+            { id: 2, category: "Introdução à Anatomia", front: "O que significa a palavra Anatomia?", back: "Significa \"cortar em partes\", relacionando-se ao estudo do corpo por partes." },
+            { id: 3, category: "Introdução à Anatomia", front: "O que é posição anatômica?", back: "Corpo em pé, postura reta, rosto voltado para frente, membros superiores ao lado do corpo com as palmas das mãos para frente e membros inferiores unidos, com os pés voltados para frente." },
+            { id: 4, category: "Introdução à Anatomia", front: "O que significa superior?", back: "Em direção à parte superior do corpo." },
+            { id: 5, category: "Introdução à Anatomia", front: "O que significa inferior?", back: "Em direção à parte inferior do corpo." },
+            { id: 6, category: "Introdução à Anatomia", front: "O que significa anterior (frontal)?", back: "Em direção à parte da frente do corpo." },
+            { id: 7, category: "Introdução à Anatomia", front: "O que significa posterior?", back: "Em direção à parte de trás do corpo." },
+            { id: 8, category: "Introdução à Anatomia", front: "O que significa medial?", back: "Mais próximo da linha mediana do corpo." },
+            { id: 9, category: "Introdução à Anatomia", front: "O que significa lateral?", back: "Mais afastado da linha mediana, em direção à lateral do corpo." },
+            { id: 10, category: "Introdução à Anatomia", front: "O que significa proximal?", back: "Mais próximo da raiz ou ponto de origem de um membro." },
+            { id: 11, category: "Introdução à Anatomia", front: "O que significa distal?", back: "Mais distante da raiz ou ponto de origem de um membro." },
+            { id: 12, category: "Introdução à Anatomia", front: "O que é o plano sagital?", back: "Divide o corpo em lado direito e esquerdo." },
+            { id: 13, category: "Introdução à Anatomia", front: "O que é o plano mediano?", back: "Divide o corpo em lado direito e esquerdo exatamente no centro." },
+            { id: 14, category: "Introdução à Anatomia", front: "O que é o plano frontal ou coronal?", back: "Divide o corpo em anterior (frente) e posterior (trás)." },
+            { id: 15, category: "Introdução à Anatomia", front: "O que é o plano transversal ou axial?", back: "Divide o corpo em partes superior e inferior." },
+
+            // SISTEMA ESQUELÉTICO (16-84)
+            { id: 16, category: "Sistema Esquelético", front: "O que é Osteologia?", back: "É o estudo dos ossos." },
+            { id: 17, category: "Sistema Esquelético", front: "Do que é composto o sistema esquelético?", back: "De ossos e cartilagens." },
+            { id: 18, category: "Sistema Esquelético", front: "Quantos ossos existem classicamente no esqueleto humano adulto?", back: "206 ossos." },
+            { id: 19, category: "Sistema Esquelético", front: "Quais são as principais funções do sistema esquelético?", back: "Sustentação, proteção, movimento, armazenamento de sais minerais e hematopoiese." },
+            { id: 20, category: "Sistema Esquelético", front: "O que é o esqueleto axial?", back: "É formado pelos ossos da cabeça, pescoço e tronco." },
+            { id: 21, category: "Sistema Esquelético", front: "Quantos ossos possui o esqueleto axial?", back: "80 ossos." },
+            { id: 22, category: "Sistema Esquelético", front: "O que é o esqueleto apendicular?", back: "É formado pelos membros superiores e inferiores." },
+            { id: 23, category: "Sistema Esquelético", front: "Quantos ossos possui o esqueleto apendicular?", back: "126 ossos." },
+            { id: 24, category: "Sistema Esquelético", front: "O que une o esqueleto axial ao apendicular?", back: "As cinturas escapular e pélvica." },
+            { id: 25, category: "Sistema Esquelético", front: "Quais são os tipos de ossos estudados na aula?", back: "Longos, curtos, planos, irregulares, sesamoides, pneumáticos e alongados." },
+            { id: 26, category: "Sistema Esquelético", front: "O que caracteriza um osso longo?", back: "O comprimento é maior que a largura; possui diáfise e duas epífises." },
+            { id: 27, category: "Sistema Esquelético", front: "O que é a diáfise?", back: "É o corpo ou parte central do osso longo." },
+            { id: 28, category: "Sistema Esquelético", front: "O que são as epífises?", back: "São as duas extremidades do osso longo." },
+            { id: 29, category: "Sistema Esquelético", front: "O que existe no interior da diáfise?", back: "Uma cavidade medular, também chamada canal medular." },
+            { id: 30, category: "Sistema Esquelético", front: "Dê exemplos de ossos longos.", back: "Fêmur, rádio, ulna, tíbia e fíbula." },
+            { id: 31, category: "Sistema Esquelético", front: "O que caracteriza um osso curto?", back: "Seu comprimento é praticamente igual à sua largura." },
+            { id: 32, category: "Sistema Esquelético", front: "Qual exemplo de osso curto?", back: "Ossos do carpo." },
+            { id: 33, category: "Sistema Esquelético", front: "O que caracteriza um osso plano?", back: "É fino e formado por duas lâminas de tecido ósseo compacto; tem função de proteção." },
+            { id: 34, category: "Sistema Esquelético", front: "Qual exemplo de osso plano?", back: "Parietal." },
+            { id: 35, category: "Sistema Esquelético", front: "O que são ossos alongados?", back: "São ossos longos, porém achatados e sem canal central." },
+            { id: 36, category: "Sistema Esquelético", front: "Qual exemplo de osso alongado?", back: "Costelas." },
+            { id: 37, category: "Sistema Esquelético", front: "O que são ossos pneumáticos?", back: "Ossos ocos, com cavidades cheias de ar e revestidas por mucosa." },
+            { id: 38, category: "Sistema Esquelético", front: "Dê exemplos de ossos pneumáticos.", back: "Frontal, maxila e esfenoide." },
+            { id: 39, category: "Sistema Esquelético", front: "O que caracteriza um osso irregular?", back: "Possui forma complexa e não se encaixa nas outras categorias." },
+            { id: 40, category: "Sistema Esquelético", front: "Qual exemplo de osso irregular?", back: "Vértebras." },
+            { id: 41, category: "Sistema Esquelético", front: "O que são ossos sesamoides?", back: "Desenvolvem-se na substância de certos tendões ou da cápsula fibrosa de algumas articulações." },
+            { id: 42, category: "Sistema Esquelético", front: "Qual é o principal exemplo de osso sesamoide?", back: "Patela." },
+            { id: 43, category: "Sistema Esquelético", front: "Quais são os três tipos de células ósseas?", back: "Osteoblastos, osteócitos e osteoclastos." },
+            { id: 44, category: "Sistema Esquelético", front: "Qual é a função dos osteoblastos?", back: "Formar o osso e sintetizar a matriz óssea." },
+            { id: 45, category: "Sistema Esquelético", front: "Qual é a função dos osteoclastos?", back: "Fazer a reabsorção óssea, degradando a matriz." },
+            { id: 46, category: "Sistema Esquelético", front: "Qual é a função dos osteócitos?", back: "São células maduras responsáveis pela manutenção do tecido ósseo." },
+            { id: 47, category: "Sistema Esquelético", front: "Onde encontramos o osso compacto?", back: "Na camada externa dos ossos e em grande parte das diáfises dos ossos longos." },
+            { id: 48, category: "Sistema Esquelético", front: "Qual é a função do tecido ósseo compacto?", back: "Proteção, suporte e resistência aos estresses produzidos pelo peso e movimento." },
+            { id: 49, category: "Sistema Esquelético", front: "O que são trabéculas?", back: "São placas finas de osso que se conectam formando uma espécie de treliça no osso esponjoso." },
+            { id: 50, category: "Sistema Esquelético", front: "Onde encontramos o osso esponjoso?", back: "Principalmente no interior dos ossos, incluindo ossos planos, irregulares e epífises dos ossos longos." },
+            { id: 51, category: "Sistema Esquelético", front: "O que existe entre as trabéculas de alguns ossos?", back: "Medula óssea vermelha." },
+            { id: 52, category: "Sistema Esquelético", front: "Quantos ossos formam o crânio?", back: "22 ossos." },
+            { id: 53, category: "Sistema Esquelético", front: "Qual é a função principal do crânio?", back: "Proteger o encéfalo e os principais órgãos dos sentidos." },
+            { id: 54, category: "Sistema Esquelético", front: "Quantos ossos formam o crânio propriamente dito?", back: "8 ossos." },
+            { id: 55, category: "Sistema Esquelético", front: "Quais são os 8 ossos do crânio?", back: "Frontal, parietais, temporais, occipital, esfenoide e etmoide." },
+            { id: 56, category: "Sistema Esquelético", front: "Quantos ossos formam a face?", back: "14 ossos." },
+            { id: 57, category: "Sistema Esquelético", front: "Qual é o único osso do crânio com articulação móvel?", back: "Mandíbula." },
+            { id: 58, category: "Sistema Esquelético", front: "Quantas vértebras existem na coluna?", back: "33 vértebras." },
+            { id: 59, category: "Sistema Esquelético", front: "Quantas vértebras cervicais existem?", back: "7 vértebras." },
+            { id: 60, category: "Sistema Esquelético", front: "Quantas vértebras torácicas existem?", back: "12 vértebras." },
+            { id: 61, category: "Sistema Esquelético", front: "Quantas vértebras lombares existem?", back: "5 vértebras." },
+            { id: 62, category: "Sistema Esquelético", front: "Quantas vértebras sacrais existem?", back: "5 vértebras." },
+            { id: 63, category: "Sistema Esquelético", front: "Quantas vértebras coccígeas existem?", back: "4 vértebras." },
+            { id: 64, category: "Sistema Esquelético", front: "Qual é a função dos discos intervertebrais?", back: "Funcionam como amortecedores e ajudam na mobilidade e estabilidade da coluna." },
+            { id: 65, category: "Sistema Esquelético", front: "Quais são as duas partes do disco intervertebral?", back: "Ânulo fibroso e núcleo pulposo." },
+            { id: 66, category: "Sistema Esquelético", front: "O que é o ânulo fibroso?", back: "Camada externa, fibrosa e resistente do disco." },
+            { id: 67, category: "Sistema Esquelético", front: "O que é o núcleo pulposo?", back: "Porção interna e gelatinosa do disco." },
+            { id: 68, category: "Sistema Esquelético", front: "Quantos pares de costelas existem?", back: "12 pares." },
+            { id: 69, category: "Sistema Esquelético", front: "Quais são as partes do esterno?", back: "Manúbrio esternal, corpo do esterno e processo xifoide." },
+            { id: 70, category: "Sistema Esquelético", front: "Quais são as costelas verdadeiras?", back: "Os 7 primeiros pares." },
+            { id: 71, category: "Sistema Esquelético", front: "Quais são as costelas falsas?", back: "Os 3 pares seguintes." },
+            { id: 72, category: "Sistema Esquelético", front: "Quais são as costelas flutuantes?", back: "Os 2 últimos pares." },
+            { id: 73, category: "Sistema Esquelético", front: "Quais ossos formam a cintura escapular?", back: "Clavícula e escápula." },
+            { id: 74, category: "Sistema Esquelético", front: "Qual é o osso do braço?", back: "Úmero." },
+            { id: 75, category: "Sistema Esquelético", front: "Quais são os ossos do antebraço?", back: "Rádio e ulna." },
+            { id: 76, category: "Sistema Esquelético", front: "Quantos ossos existem no carpo?", back: "8 ossos." },
+            { id: 77, category: "Sistema Esquelético", front: "Quantos ossos existem no metacarpo?", back: "5 ossos." },
+            { id: 78, category: "Sistema Esquelético", front: "Quantos ossos existem nos dedos da mão?", back: "14 falanges." },
+            { id: 79, category: "Sistema Esquelético", front: "Quais são os ossos da coxa?", back: "Fêmur e patela." },
+            { id: 80, category: "Sistema Esquelético", front: "Quais são os ossos da perna?", back: "Tíbia e fíbula." },
+            { id: 81, category: "Sistema Esquelético", front: "Quantos ossos existem no tarso?", back: "7 ossos." },
+            { id: 82, category: "Sistema Esquelético", front: "Quantos ossos existem no metatarso?", back: "5 ossos." },
+            { id: 83, category: "Sistema Esquelético", front: "Quantos ossos existem nos dedos do pé?", back: "14 falanges." },
+            { id: 84, category: "Sistema Esquelético", front: "Quais ossos formam o osso do quadril?", back: "Ílio, ísquio e púbis." },
+
+            // SISTEMA ARTICULAR (85-104)
+            { id: 85, category: "Sistema Articular", front: "O que é Artrologia?", back: "É o capítulo da Anatomia que estuda as articulações." },
+            { id: 86, category: "Sistema Articular", front: "O que é uma articulação?", back: "É o ponto de reunião de dois ou mais ossos." },
+            { id: 87, category: "Sistema Articular", front: "Quais são os três tipos de articulações quanto à estrutura/mobilidade estudados na aula?", back: "Fibrosas, cartilaginosas e sinoviais." },
+            { id: 88, category: "Sistema Articular", front: "O que caracteriza uma articulação fibrosa?", back: "Os ossos são unidos por tecido fibroso e não existe cavidade articular." },
+            { id: 89, category: "Sistema Articular", front: "Quanto movimento uma articulação fibrosa permite?", back: "Pouco ou nenhum movimento." },
+            { id: 90, category: "Sistema Articular", front: "O que caracteriza uma articulação cartilaginosa?", back: "Os ossos são unidos por cartilagem e não apresentam cavidade articular." },
+            { id: 91, category: "Sistema Articular", front: "Quanto movimento uma articulação cartilaginosa permite?", back: "Pouco ou nenhum movimento." },
+            { id: 92, category: "Sistema Articular", front: "O que caracteriza uma articulação sinovial?", back: "Possui cavidade articular e os ossos são unidos pela cápsula articular e frequentemente por ligamentos acessórios." },
+            { id: 93, category: "Sistema Articular", front: "O que são ligamentos?", back: "Estruturas formadas por tecido conjuntivo fibroso e elástico que ajudam na união das articulações." },
+            { id: 94, category: "Sistema Articular", front: "O que é a cápsula articular?", back: "Estrutura que envolve as superfícies articulares dos ossos." },
+            { id: 95, category: "Sistema Articular", front: "O que é a membrana sinovial?", back: "Tecido conectivo que secreta o líquido sinovial." },
+            { id: 96, category: "Sistema Articular", front: "Qual é a função do líquido sinovial?", back: "Lubrificar a cartilagem articular, reduzir a fricção e ajudar no movimento livre." },
+            { id: 97, category: "Sistema Articular", front: "O que é flexão?", back: "Movimento de uma parte do corpo contra a outra, como dobrar o cotovelo." },
+            { id: 98, category: "Sistema Articular", front: "O que é extensão?", back: "Movimento de afastar uma parte corporal da outra." },
+            { id: 99, category: "Sistema Articular", front: "O que é abdução?", back: "Afastamento de um membro do plano mediano do corpo." },
+            { id: 100, category: "Sistema Articular", front: "O que é adução?", back: "Aproximação de um membro ao plano mediano do corpo." },
+            { id: 101, category: "Sistema Articular", front: "O que é circundação?", back: "Combinação sucessiva de flexão, abdução, extensão e adução, fazendo a porção distal descrever um círculo." },
+            { id: 102, category: "Sistema Articular", front: "O que é uma articulação monoaxial?", back: "Realiza movimentos em torno de apenas um eixo." },
+            { id: 103, category: "Sistema Articular", front: "O que é uma articulação biaxial?", back: "Realiza movimentos em torno de dois eixos." },
+            { id: 104, category: "Sistema Articular", front: "O que é uma articulação triaxial?", back: "Realiza movimentos em torno de três eixos." },
+
+            // SISTEMA CIRCULATÓRIO (105-142)
+            { id: 105, category: "Sistema Circulatório", front: "Qual é a função principal do coração?", back: "Funcionar como uma bomba muscular, impulsionando o sangue para todas as partes do corpo através dos vasos sanguíneos.\n💡 Macete: Coração = bomba do sistema circulatório." },
+            { id: 106, category: "Sistema Circulatório", front: "Onde o coração está localizado?", back: "Na cavidade torácica, na região do mediastino, mais para o lado esquerdo." },
+            { id: 107, category: "Sistema Circulatório", front: "Quantas cavidades o coração possui?", back: "Possui 4 cavidades:\n• Átrio direito\n• Átrio esquerdo\n• Ventrículo direito\n• Ventrículo esquerdo\n💡 Macete: 2 em cima + 2 embaixo." },
+            { id: 108, category: "Sistema Circulatório", front: "Quais são as cavidades superiores do coração?", back: "Os átrios: Átrio direito e Átrio esquerdo." },
+            { id: 109, category: "Sistema Circulatório", front: "Quais são as cavidades inferiores?", back: "Os ventrículos: Ventrículo direito e Ventrículo esquerdo.\n💡 Macete: Átrio = recebe / Ventrículo = impulsiona." },
+            { id: 110, category: "Sistema Circulatório", front: "Quais são as três camadas da parede do coração?", back: "Endocárdio, Miocárdio e Epicárdio.\n💡 Macete: ENDO → MIO → EPI" },
+            { id: 111, category: "Sistema Circulatório", front: "O que é o endocárdio?", back: "É a camada interna que reveste as cavidades cardíacas.\n💡 Macete: ENDO = dentro." },
+            { id: 112, category: "Sistema Circulatório", front: "O que é o miocárdio?", back: "É a camada formada por fibras musculares, responsável pelos movimentos de contração do coração.\n💡 Macete: MIO = músculo." },
+            { id: 113, category: "Sistema Circulatório", front: "O que é o epicárdio?", back: "É a camada externa da parede cardíaca, também chamada de pericárdio visceral.\n💡 Macete: EPI = externo." },
+            { id: 114, category: "Sistema Circulatório", front: "Qual é a função das valvas cardíacas?", back: "Garantir que o sangue flua na direção correta, evitando o refluxo.\n💡 Macete: Portas de mão única 🚪." },
+            { id: 115, category: "Sistema Circulatório", front: "Quantas valvas existem no coração?", back: "4 valvas: Tricúspide, Mitral/bicúspide, Pulmonar e Aórtica." },
+            { id: 116, category: "Sistema Circulatório", front: "Onde fica a valva tricúspide?", back: "Entre Átrio direito → Ventrículo direito. Possui 3 cúspides.\n💡 Macete: TRI = 3." },
+            { id: 117, category: "Sistema Circulatório", front: "Onde fica a valva mitral?", back: "Entre Átrio esquerdo → Ventrículo esquerdo. Possui 2 cúspides.\n💡 Macete: BI = 2." },
+            { id: 118, category: "Sistema Circulatório", front: "Qual valva está na saída do ventrículo direito?", back: "A valva pulmonar (Ventrículo direito → artéria pulmonar)." },
+            { id: 119, category: "Sistema Circulatório", front: "Qual valva está na saída do ventrículo esquerdo?", back: "A valva aórtica (Ventrículo esquerdo → aorta)." },
+            { id: 120, category: "Sistema Circulatório", front: "O que é circulação pulmonar?", back: "É o circuito entre o coração e os pulmões: Ventrículo direito → artéria pulmonar → pulmões → veias pulmonares → átrio esquerdo.\n💡 Macete: Direito → pulmão → esquerdo." },
+            { id: 121, category: "Sistema Circulatório", front: "O que é circulação sistêmica?", back: "É o circuito que leva o sangue do coração para o corpo: Ventrículo esquerdo → aorta → corpo → veias cavas → átrio direito.\n💡 Macete: Esquerdo → corpo → direito." },
+            { id: 122, category: "Sistema Circulatório", front: "Complete: Ventrículo direito → ______ → pulmões → ______ → átrio esquerdo.", back: "Artéria pulmonar → veias pulmonares." },
+            { id: 123, category: "Sistema Circulatório", front: "Complete: Ventrículo esquerdo → ______ → corpo → ______ → átrio direito.", back: "Aorta → veias cavas." },
+            { id: 124, category: "Sistema Circulatório", front: "O que é o ciclo cardíaco?", back: "É um batimento cardíaco completo, formado por contração e relaxamento." },
+            { id: 125, category: "Sistema Circulatório", front: "O que é sístole?", back: "É a fase de contração do coração. Durante a sístole, o sangue é ejetado dos ventrículos.\n💡 Macete: SÍSTOLE = SAI sangue." },
+            { id: 126, category: "Sistema Circulatório", front: "O que é diástole?", back: "É a fase de relaxamento do coração. Durante ela, os ventrículos são preenchidos com sangue.\n💡 Macete: DIÁSTOLE = descanso/enchimento." },
+            { id: 127, category: "Sistema Circulatório", front: "Para que serve o sistema de condução cardíaco?", back: "Ele gera e conduz impulsos elétricos que ativam a musculatura cardíaca." },
+            { id: 128, category: "Sistema Circulatório", front: "Qual é a sequência do sistema de condução?", back: "Nó sinusal → Nó AV → Feixe de His → Fibras de Purkinje.\n💡 Macete: SINUSAL → AV → HIS → PURKINJE" },
+            { id: 129, category: "Sistema Circulatório", front: "Qual estrutura é o \"marcapasso\" do coração no material?", back: "O nó sinusal. Ele é formado por células excitáveis especializadas e inicia os impulsos que participam da ativação cardíaca." },
+            { id: 130, category: "Sistema Circulatório", front: "Qual estrutura conduz o impulso até a musculatura cardíaca contrátil através de uma rede terminal?", back: "O sistema de fibras de Purkinje." },
+            { id: 131, category: "Sistema Circulatório", front: "O sistema nervoso simpático faz o quê com o coração?", back: "Aumenta a frequência cardíaca, a força de contração e a circulação coronária.\n💡 Macete: Simpático = acelerador." },
+            { id: 132, category: "Sistema Circulatório", front: "O parassimpático faz o quê com o coração?", back: "Diminui a frequência cardíaca, a força de contração atrial, a velocidade de condução AV e a circulação coronária.\n💡 Macete: Parassimpático = freio." },
+            { id: 133, category: "Sistema Circulatório", front: "Quais são os três principais tipos de vasos sanguíneos?", back: "Artérias, veias e capilares." },
+            { id: 134, category: "Sistema Circulatório", front: "O que fazem as artérias?", back: "Levam o sangue para fora do coração. Possuem paredes espessas e dilatáveis.\n💡 Macete: ARTÉRIA = SAI DO CORAÇÃO." },
+            { id: 135, category: "Sistema Circulatório", front: "O que fazem as veias?", back: "Levam o sangue de volta ao coração. Algumas possuem válvulas que ajudam a impedir o refluxo.\n💡 Macete: VEIA = VOLTA." },
+            { id: 136, category: "Sistema Circulatório", front: "Qual é a função dos capilares?", back: "Fazer a ligação entre artérias e veias e permitir as trocas entre o sangue e os tecidos. Suas paredes são muito finas.\n💡 Macete: CAPILAR = TROCAS." },
+            { id: 137, category: "Sistema Circulatório", front: "Qual é a principal função do sistema linfático?", back: "Transportar a linfa dos tecidos para o sistema circulatório e participar da defesa imunológica." },
+            { id: 138, category: "Sistema Circulatório", front: "O que é a linfa?", back: "É o líquido que circula pelos vasos linfáticos. É semelhante ao sangue, mas sem hemácias, contendo glóbulos brancos, principalmente linfócitos." },
+            { id: 139, category: "Sistema Circulatório", front: "O sistema linfático possui uma bomba central como o coração?", back: "Não. A linfa se movimenta principalmente pela ação de fatores externos, como a compressão produzida pelos músculos esqueléticos." },
+            { id: 140, category: "Sistema Circulatório", front: "Qual é a função dos linfonodos?", back: "Filtrar a linfa e ajudar a eliminar corpos estranhos, como vírus e bactérias. Eles possuem linfócitos, macrófagos e plasmócitos.\n💡 Macete: LINFONODO = FILTRO DA LINFA." },
+            { id: 141, category: "Sistema Circulatório", front: "Onde os linfócitos T amadurecem?", back: "No timo.\n💡 Macete: Timo → T." },
+            { id: 142, category: "Sistema Circulatório", front: "Qual é uma das principais funções do baço?", back: "Filtrar o sangue e participar da defesa do organismo. Possui muitos macrófagos, que destroem microrganismos, substâncias estranhas e células sanguíneas desgastadas.\n💡 Macete: BAÇO = filtro do sangue." },
+
+            // SISTEMA RESPIRATÓRIO (143-167)
+            { id: 143, category: "Sistema Respiratório", front: "Quais órgãos fazem parte das vias respiratórias segundo o material?", back: "Nariz, cavidade nasal, faringe, laringe, traqueia, brônquios e pulmões." },
+            { id: 144, category: "Sistema Respiratório", front: "Quais são as vias respiratórias superiores?", back: "Nariz + faringe + laringe." },
+            { id: 145, category: "Sistema Respiratório", front: "Quais são as vias respiratórias inferiores?", back: "Traqueia + brônquios e suas divisões + pulmões." },
+            { id: 146, category: "Sistema Respiratório", front: "O que acontece com o ar quando passa pelas fossas nasais?", back: "Ele é aquecido, umidificado e filtrado.\n💡 Macete: A-U-F = aquece, umidifica, filtra." },
+            { id: 147, category: "Sistema Respiratório", front: "Qual é a função dos cornetos nasais?", back: "Eles dividem a cavidade nasal em meatos e ajudam a lentificar o fluxo aéreo." },
+            { id: 148, category: "Sistema Respiratório", front: "Quais são as três partes da faringe?", back: "Nasofaringe, Orofaringe e Laringofaringe." },
+            { id: 149, category: "Sistema Respiratório", front: "A faringe conduz somente ar?", back: "Não. É um canal comum por onde passam ar e alimentos." },
+            { id: 150, category: "Sistema Respiratório", front: "Qual é a função da epiglote?", back: "Durante a deglutição, ela ajuda a impedir que alimentos e líquidos entrem nas vias respiratórias.\n💡 Macete: Epiglote = proteção." },
+            { id: 151, category: "Sistema Respiratório", front: "Qual estrutura da laringe participa da produção dos sons?", back: "As cordas vocais. Elas produzem sons durante a passagem do ar." },
+            { id: 152, category: "Sistema Respiratório", front: "Qual é o caminho da traqueia?", back: "Laringe → traqueia → brônquios." },
+            { id: 153, category: "Sistema Respiratório", front: "O que é a carina?", back: "É a região onde ocorre a divisão da traqueia em brônquios.\n💡 Macete: CARINA = bifurcação da traqueia." },
+            { id: 154, category: "Sistema Respiratório", front: "Qual é a sequência da árvore brônquica apresentada no material?", back: "Brônquios principais → brônquios lobares → brônquios segmentares → bronquíolos → bronquíolos terminais." },
+            { id: 155, category: "Sistema Respiratório", front: "Quantos lobos possui o pulmão direito?", back: "3 lobos." },
+            { id: 156, category: "Sistema Respiratório", front: "Quantos lobos possui o pulmão esquerdo?", back: "2 lobos.\n💡 Macete: Direito = 3 / Esquerdo = 2." },
+            { id: 157, category: "Sistema Respiratório", front: "O que é a pleura?", back: "É uma membrana dupla relacionada aos pulmões. Possui pleura visceral e pleura parietal." },
+            { id: 158, category: "Sistema Respiratório", front: "O que é a pleura visceral?", back: "É a pleura que envolve o pulmão.\n💡 Macete: Visceral → órgão." },
+            { id: 159, category: "Sistema Respiratório", front: "O que é a pleura parietal?", back: "É a pleura que reveste internamente a parede da cavidade torácica.\n💡 Macete: Parietal → parede." },
+            { id: 160, category: "Sistema Respiratório", front: "O que são os alvéolos?", back: "São sacos de ar onde ocorre a maior parte da troca gasosa.\n💡 Macete: ALVÉOLO = TROCA GASOSA." },
+            { id: 161, category: "Sistema Respiratório", front: "Quais células compõem os alvéolos?", back: "Pneumócitos tipo I, Pneumócitos tipo II e Macrófagos alveolares." },
+            { id: 162, category: "Sistema Respiratório", front: "Qual é a função do surfactante?", back: "Diminuir a tensão superficial dos alvéolos, evitando seu colabamento.\n💡 Macete: SURFACTANTE = impede o alvéolo de colabar." },
+            { id: 163, category: "Sistema Respiratório", front: "Quais são os quatro mecanismos de defesa pulmonar apresentados no material?", back: "Filtração aerodinâmica, Sistema mucociliar, Fagocitose e Resposta imunológica específica." },
+            { id: 164, category: "Sistema Respiratório", front: "O que é a filtração aerodinâmica?", back: "É um mecanismo relacionado à deposição de partículas na camada mucosa das vias aéreas, influenciado pelo tamanho das partículas, anatomia, pelos nasais e modo de respirar." },
+            { id: 165, category: "Sistema Respiratório", front: "O que faz o sistema mucociliar?", back: "O muco prende partículas e os cílios movimentam o muco, ajudando a transportar esse material para fora das vias respiratórias.\n💡 Macete: Muco = prende / cílios = empurram." },
+            { id: 166, category: "Sistema Respiratório", front: "Quais são as duas camadas do muco respiratório?", back: "Camada Sol (envolve os cílios) e Camada Gel (mais viscosa, fica sobre os cílios)." },
+            { id: 167, category: "Sistema Respiratório", front: "O que é o clearance alveolar?", back: "É um mecanismo de defesa realizado pelo macrófago alveolar, que ajuda na proteção do interior dos pulmões." },
+
+            // SISTEMA MUSCULAR (168-217)
+            { id: 168, category: "Sistema Muscular", front: "O que é Miologia?", back: "É o estudo dos músculos." },
+            { id: 169, category: "Sistema Muscular", front: "Qual é a principal função dos músculos relacionada ao movimento?", back: "Os músculos são os elementos ativos do movimento, atuando sobre ossos e articulações para movimentar o corpo." },
+            { id: 170, category: "Sistema Muscular", front: "Quais são as três principais funções do sistema muscular?", back: "Locomoção, sustentação e homeotermia." },
+            { id: 171, category: "Sistema Muscular", front: "Quais são as propriedades dos músculos?", back: "Elasticidade, contratilidade e tonicidade." },
+            { id: 172, category: "Sistema Muscular", front: "O que é contratilidade?", back: "É a capacidade do músculo de se contrair quando recebe um estímulo." },
+            { id: 173, category: "Sistema Muscular", front: "Quais são os três tipos de músculos?", back: "Músculo liso, músculo estriado cardíaco e músculo estriado esquelético." },
+            { id: 174, category: "Sistema Muscular", front: "O músculo liso possui contração voluntária ou involuntária?", back: "Involuntária, ou seja, independente da vontade do indivíduo." },
+            { id: 175, category: "Sistema Muscular", front: "Onde encontramos músculo liso?", back: "Na pele, órgãos internos, aparelho reprodutor, grandes vasos sanguíneos e aparelho excretor." },
+            { id: 176, category: "Sistema Muscular", front: "Qual sistema controla o músculo liso?", back: "O sistema nervoso vegetativo." },
+            { id: 177, category: "Sistema Muscular", front: "Onde encontramos o músculo estriado cardíaco?", back: "No coração, forming o miocárdio." },
+            { id: 178, category: "Sistema Muscular", front: "A contração do músculo cardíaco é voluntária ou involuntária?", back: "Involuntária." },
+            { id: 179, category: "Sistema Muscular", front: "Qual é a função principal do músculo cardíaco?", back: "Realizar contrações rítmicas que bombeiam o sangue pelo corpo." },
+            { id: 180, category: "Sistema Muscular", front: "O que são discos intercalares?", back: "São estruturas que unem as células do músculo cardíaco e aumentam a adesão entre elas, contribuindo para uma contração rítmica e vigorosa." },
+            { id: 181, category: "Sistema Muscular", front: "O músculo estriado esquelético possui contração voluntária ou involuntária?", back: "Voluntária, dependendo da vontade do indivíduo." },
+            { id: 182, category: "Sistema Muscular", front: "Qual é a principal função do músculo esquelético?", back: "Movimentar os ossos e cartilagens do esqueleto e estabilizar as articulações." },
+            { id: 183, category: "Sistema Muscular", front: "Quem inicia o processo de contração muscular?", back: "O sistema nervoso central, através de um impulso nervoso." },
+            { id: 184, category: "Sistema Muscular", front: "O que é a placa motora?", back: "É a região onde o nervo termina e transmite o impulso para a fibra muscular." },
+            { id: 185, category: "Sistema Muscular", front: "O que é o retículo sarcoplasmático?", back: "É uma estrutura da célula muscular que armazena cálcio." },
+            { id: 186, category: "Sistema Muscular", front: "Qual substância é liberada pelo retículo sarcoplasmático para iniciar a contração?", back: "O cálcio." },
+            { id: 187, category: "Sistema Muscular", front: "Quais são as duas principais proteínas envolvidas na contração muscular?", back: "Actina e miosina." },
+            { id: 188, category: "Sistema Muscular", front: "O que o cálcio permite durante a contração?", back: "Permite a interação entre actina e miosina, possibilitando que elas deslizem umas sobre as outras." },
+            { id: 189, category: "Sistema Muscular", front: "O que acontece com o músculo quando o estímulo termina?", back: "O cálcio é reabsorvido pelo retículo sarcoplasmático e o músculo relaxa." },
+            { id: 190, category: "Sistema Muscular", front: "Qual é a principal molécula de energia utilizada na contração muscular?", back: "ATP — adenosina trifosfato." },
+            { id: 191, category: "Sistema Muscular", front: "O que acontece quando o músculo é exercitado exaustivamente e o oxigênio não é suficiente?", back: "Algumas células passam a produzir ATP por fermentação láctica." },
+            { id: 192, category: "Sistema Muscular", front: "Qual substância é produzida na fermentação láctica citada no material?", back: "Ácido láctico." },
+            { id: 193, category: "Sistema Muscular", front: "O que é contração isotônica?", back: "É uma contração em que ocorre encurtamento das fibras musculares e realização de trabalho; é uma contração dinâmica.\n💡 Macete: Isotônica = encurta/movimenta." },
+            { id: 194, category: "Sistema Muscular", front: "O que é contração isométrica?", back: "É uma contração estática em que não há encurtamento das fibras musculares nem movimento articular.\n💡 Macete: Isométrica = mantém/estática." },
+            { id: 195, category: "Sistema Muscular", front: "O que é um músculo agonista?", back: "É o músculo que atua como principal agente na execução de um movimento." },
+            { id: 196, category: "Sistema Muscular", front: "O que é um músculo antagonista?", back: "É o músculo que se opõe ao trabalho do agonista, ajudando a regular a rapidez ou potência do movimento." },
+            { id: 197, category: "Sistema Muscular", front: "O que é o ventre muscular?", back: "É a parte carnosa do músculo, formada por fibras musculares que realizam a contração." },
+            { id: 198, category: "Sistema Muscular", front: "O que é o tendão?", back: "É a parte não contrátil localizada nas extremidades do músculo, formada por tecido conjuntivo resistente." },
+            { id: 199, category: "Sistema Muscular", front: "O que é origem muscular?", back: "É o ponto fixo do músculo. Alguns músculos possuem mais de uma origem ou cabeça." },
+            { id: 200, category: "Sistema Muscular", front: "O que é inserção muscular?", back: "É o ponto móvel do músculo." },
+            { id: 201, category: "Sistema Muscular", front: "Quantas cabeças possui o bíceps, tríceps e quadríceps?", back: "Bíceps = 2; Tríceps = 3; Quadríceps = 4." },
+            { id: 202, category: "Sistema Muscular", front: "O que é necessário para o músculo realizar trabalho?", back: "Receber estímulos através de um nervo motor." },
+            { id: 203, category: "Sistema Muscular", front: "Como é feita a nutrição dos músculos?", back: "Por meio do suprimento sanguíneo realizado por artérias que entram no ventre muscular e formam uma extensa rede de capilares." },
+            { id: 204, category: "Sistema Muscular", front: "O que é aponeurose?", back: "É uma membrana que envolve grupos musculares." },
+            { id: 205, category: "Sistema Muscular", front: "O que é fáscia?", back: "É um tecido fibroso e delgado que envolve o músculo." },
+            { id: 206, category: "Sistema Muscular", front: "O que caracteriza um músculo longitudinal?", back: "Seus fascículos correm ao longo do eixo do músculo. Produz bastante movimento, mas pouca potência." },
+            { id: 207, category: "Sistema Muscular", front: "O que caracteriza um músculo unipenado?", back: "Os fascículos se inserem em apenas um lado do tendão. Produz menos movimento e maior potência." },
+            { id: 208, category: "Sistema Muscular", front: "O que caracteriza um músculo bipenado?", back: "Os fascículos se inserem obliquamente nos dois lados do tendão." },
+            { id: 209, category: "Sistema Muscular", front: "O que caracteriza um músculo triangular?", back: "Os fascículos convergem de uma origem larga para um único tendão mais estreito." },
+            { id: 210, category: "Sistema Muscular", front: "O que caracteriza um músculo largo?", back: "Quando comprimento e largura predominam sobre a espessura. Exemplo: glúteo máximo." },
+            { id: 211, category: "Sistema Muscular", front: "Quais são alguns músculos da face?", back: "Orbicular do olho, orbicular da boca, zigomáticos, risório, bucinador, nasal e prócero, entre outros." },
+            { id: 212, category: "Sistema Muscular", front: "Quais são os principais músculos da mastigação citados no material?", back: "Masseter, temporal, pterigóide lateral e pterigóide medial." },
+            { id: 213, category: "Sistema Muscular", front: "Quais são alguns músculos importantes do pescoço?", back: "Platisma, esternocleidomastóideo, escaleno, esternotireóideo e trapézio." },
+            { id: 214, category: "Sistema Muscular", front: "Quais são os principais músculos do braço citados?", back: "Bíceps braquial, tríceps braquial, braquial e braquiorradial." },
+            { id: 215, category: "Sistema Muscular", front: "Qual músculo separa a cavidade torácica da abdominal?", back: "O diafragma." },
+            { id: 216, category: "Sistema Muscular", front: "Quais são alguns dos principais músculos da coxa?", back: "Reto femoral, vasto medial, vasto lateral, vasto intermédio, sartório, adutor longo, adutor magno, grácil, semitendíneo, semimembranáceo e bíceps femoral." },
+            { id: 217, category: "Sistema Muscular", front: "Quais são alguns músculos importantes da perna?", back: "Tibial anterior, extensor longo do hálux, extensor longo dos dedos, fibular longo, sóleo, gastrocnêmio e fibular curto." }
+        ];
+
+        // Application State
+        let currentCategory = "Todos";
+        let activeDeck = [...RAW_DATA];
+        let currentIndex = 0;
+        let isFlipped = false;
+        let viewMode = "cards"; // 'cards' or 'list'
+        let masteredCardIds = new Set(JSON.parse(localStorage.getItem('anatomy_mastered_ids') || '[]'));
+
+        // Categories Configuration
+        const CATEGORIES = [
+            "Todos",
+            "Introdução à Anatomia",
+            "Sistema Esquelético",
+            "Sistema Articular",
+            "Sistema Circulatório",
+            "Sistema Respiratório",
+            "Sistema Muscular"
+        ];
+
+        // Initialize App
+        document.addEventListener("DOMContentLoaded", () => {
+            renderCategoryFilters();
+            filterCategory("Todos");
+            updateGlobalProgress();
+
+            // Keyboard Navigation Listeners
+            document.addEventListener("keydown", (e) => {
+                if (viewMode !== 'cards') return;
+                if (e.code === "Space") {
+                    e.preventDefault();
+                    flipCard();
+                } else if (e.code === "ArrowRight") {
+                    nextCard();
+                } else if (e.code === "ArrowLeft") {
+                    prevCard();
+                } else if (e.key === "1") {
+                    markWrong();
+                } else if (e.key === "2") {
+                    markReview();
+                } else if (e.key === "3") {
+                    markCorrect();
+                }
+            });
+        });
+
+        // Render Category Filter Buttons
+        function renderCategoryFilters() {
+            const container = document.getElementById("category-filters");
+            container.innerHTML = CATEGORIES.map(cat => {
+                const count = cat === "Todos" ? RAW_DATA.length : RAW_DATA.filter(c => c.category === cat).length;
+                return `
+                    <button onclick="filterCategory('${cat}')" id="cat-btn-${cat.replace(/\s+/g, '-')}"
+                        class="px-3 py-1.5 text-xs font-semibold rounded-xl border transition-all flex items-center gap-1.5 ${cat === currentCategory ? 'bg-teal-500 text-white border-teal-400 shadow-md shadow-teal-500/20' : 'bg-slate-800 text-slate-300 border-slate-700 hover:border-slate-500'}">
+                        <span>${cat}</span>
+                        <span class="text-[10px] px-1.5 py-0.2 rounded-full ${cat === currentCategory ? 'bg-white/20 text-white' : 'bg-slate-700 text-slate-400'}">${count}</span>
+                    </button>
+                `;
+            }).join('');
+        }
+
+        // Filter Deck by Category
+        function filterCategory(cat) {
+            currentCategory = cat;
+            if (cat === "Todos") {
+                activeDeck = [...RAW_DATA];
+            } else {
+                activeDeck = RAW_DATA.filter(card => card.category === cat);
+            }
+            currentIndex = 0;
+            isFlipped = false;
+            
+            renderCategoryFilters();
+            renderCurrentCard();
+            if (viewMode === 'list') {
+                renderListView();
+            }
+        }
+
+        // Render Active Flashcard
+        function renderCurrentCard() {
+            const cardInner = document.getElementById("flashcard-inner");
+
+            // Reset Card Flip visually
+            if (isFlipped) {
+                isFlipped = false;
+                if (cardInner) cardInner.classList.remove("rotate-y-180");
+            }
+
+            // Completion state if all active cards in the current session are mastered
+            if (activeDeck.length === 0) {
+                document.getElementById("card-counter").innerText = `Módulo Concluído!`;
+                document.getElementById("deck-progress-bar").style.width = `100%`;
+                document.getElementById("card-mastered-status").innerHTML = `<span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-md font-semibold">🎉 Concluído</span>`;
+                
+                document.getElementById("card-front-category").innerText = currentCategory;
+                document.getElementById("card-back-category").innerText = currentCategory;
+                document.getElementById("card-id-front").innerText = "✔";
+                document.getElementById("card-id-back").innerText = "✔";
+                
+                document.getElementById("card-front-text").innerHTML = `
+                    <div class="flex flex-col items-center gap-3">
+                        <span class="text-4xl">🎉</span>
+                        <span class="text-emerald-400 font-extrabold text-xl">Parabéns!</span>
+                        <span class="text-sm font-normal text-slate-300">Você dominou todos os cartões desta sessão!</span>
+                        <button onclick="restartCurrentDeck()" class="mt-2 px-4 py-2 bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold rounded-xl text-xs transition-all shadow-lg">
+                            🔄 Reiniciar Módulo
+                        </button>
+                    </div>
+                `;
+                document.getElementById("card-back-text").innerText = "Módulo finalizado com sucesso!";
+                
+                const queueElem = document.getElementById("deck-queue-info");
+                if (queueElem) queueElem.innerText = `Bolo: 0 cartões restantes`;
+                return;
+            }
+
+            const card = activeDeck[currentIndex];
+            const isMastered = masteredCardIds.has(card.id);
+
+            // Populate Card Details
+            document.getElementById("card-front-category").innerText = card.category;
+            document.getElementById("card-back-category").innerText = card.category;
+            document.getElementById("card-id-front").innerText = `#${card.id}`;
+            document.getElementById("card-id-back").innerText = `#${card.id}`;
+            document.getElementById("card-front-text").innerText = card.front;
+            document.getElementById("card-back-text").innerText = card.back;
+
+            // Counter & Progress
+            document.getElementById("card-counter").innerText = `Cartão ${currentIndex + 1} de ${activeDeck.length}`;
+            const progressPct = ((currentIndex + 1) / activeDeck.length) * 100;
+            document.getElementById("deck-progress-bar").style.width = `${progressPct}%`;
+
+            // Status Badge
+            const statusContainer = document.getElementById("card-mastered-status");
+            if (isMastered) {
+                statusContainer.innerHTML = `<span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-md font-semibold flex items-center gap-1">✓ Aprendido</span>`;
+            } else {
+                statusContainer.innerHTML = `<span class="bg-amber-500/10 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-md font-semibold flex items-center gap-1">⏱ Para Revisar</span>`;
+            }
+
+            // Update Deck Pool Info
+            const queueElem = document.getElementById("deck-queue-info");
+            if (queueElem) {
+                queueElem.innerText = `Bolo: ${activeDeck.length} cartões`;
+            }
+        }
+
+        // Response Actions Logic (Spaced Repetition Queue)
+        function markCorrect() {
+            if (activeDeck.length === 0) return;
+            const currentCard = activeDeck[currentIndex];
+            masteredCardIds.add(currentCard.id);
+            localStorage.setItem('anatomy_mastered_ids', JSON.stringify([...masteredCardIds]));
+            updateGlobalProgress();
+            
+            // Remove correctly answered card from current study session queue
+            activeDeck.splice(currentIndex, 1);
+            if (currentIndex >= activeDeck.length && activeDeck.length > 0) {
+                currentIndex = 0;
+            }
+            isFlipped = false;
+            renderCurrentCard();
+        }
+
+        function markWrong() {
+            if (activeDeck.length === 0) return;
+            const currentCard = activeDeck[currentIndex];
+            masteredCardIds.delete(currentCard.id);
+            localStorage.setItem('anatomy_mastered_ids', JSON.stringify([...masteredCardIds]));
+            updateGlobalProgress();
+
+            // Re-insert card 3 positions ahead so it comes back for re-testing
+            activeDeck.splice(currentIndex, 1);
+            const insertIndex = Math.min(currentIndex + 3, activeDeck.length);
+            activeDeck.splice(insertIndex, 0, currentCard);
+
+            if (currentIndex >= activeDeck.length && activeDeck.length > 0) {
+                currentIndex = 0;
+            }
+            isFlipped = false;
+            renderCurrentCard();
+        }
+
+        function markReview() {
+            if (activeDeck.length === 0) return;
+            const currentCard = activeDeck[currentIndex];
+            masteredCardIds.delete(currentCard.id);
+            localStorage.setItem('anatomy_mastered_ids', JSON.stringify([...masteredCardIds]));
+            updateGlobalProgress();
+
+            // Re-insert card 5 positions ahead for later review
+            activeDeck.splice(currentIndex, 1);
+            const insertIndex = Math.min(currentIndex + 5, activeDeck.length);
+            activeDeck.splice(insertIndex, 0, currentCard);
+
+            if (currentIndex >= activeDeck.length && activeDeck.length > 0) {
+                currentIndex = 0;
+            }
+            isFlipped = false;
+            renderCurrentCard();
+        }
+
+        function restartCurrentDeck() {
+            filterCategory(currentCategory);
+        }
+
+        // Toggle Flip Animation
+        function flipCard() {
+            const cardInner = document.getElementById("flashcard-inner");
+            isFlipped = !isFlipped;
+            if (isFlipped) {
+                cardInner.classList.add("rotate-y-180");
+            } else {
+                cardInner.classList.remove("rotate-y-180");
+            }
+        }
+
+        // Navigation
+        function nextCard() {
+            if (currentIndex < activeDeck.length - 1) {
+                currentIndex++;
+            } else {
+                currentIndex = 0; // Loop back
+            }
+            renderCurrentCard();
+        }
+
+        function prevCard() {
+            if (currentIndex > 0) {
+                currentIndex--;
+            } else {
+                currentIndex = activeDeck.length - 1; // Loop end
+            }
+            renderCurrentCard();
+        }
+
+        // Shuffle Deck
+        function shuffleDeck() {
+            for (let i = activeDeck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [activeDeck[i], activeDeck[j]] = [activeDeck[j], activeDeck[i]];
+            }
+            currentIndex = 0;
+            renderCurrentCard();
+        }
+
+        // Mastery Toggle
+        function toggleCurrentMastered() {
+            const currentCard = activeDeck[currentIndex];
+            if (masteredCardIds.has(currentCard.id)) {
+                masteredCardIds.delete(currentCard.id);
+            } else {
+                masteredCardIds.add(currentCard.id);
+            }
+            localStorage.setItem('anatomy_mastered_ids', JSON.stringify([...masteredCardIds]));
+            renderCurrentCard();
+            updateGlobalProgress();
+            if (viewMode === 'list') renderListView();
+        }
+
+        function toggleMasteredById(id, event) {
+            event.stopPropagation();
+            if (masteredCardIds.has(id)) {
+                masteredCardIds.delete(id);
+            } else {
+                masteredCardIds.add(id);
+            }
+            localStorage.setItem('anatomy_mastered_ids', JSON.stringify([...masteredCardIds]));
+            renderCurrentCard();
+            updateGlobalProgress();
+            renderListView();
+        }
+
+        // Global Progress Bar
+        function updateGlobalProgress() {
+            const total = RAW_DATA.length;
+            const count = masteredCardIds.size;
+            const pct = Math.round((count / total) * 100);
+            document.getElementById("global-progress-text").innerText = `${count} / ${total} (${pct}%)`;
+        }
+
+        // View Mode Switcher
+        function setViewMode(mode) {
+            viewMode = mode;
+            const cardsView = document.getElementById("cards-view");
+            const listView = document.getElementById("list-view");
+            const searchContainer = document.getElementById("search-container");
+
+            const cardsBtn = document.getElementById("view-cards-btn");
+            const listBtn = document.getElementById("view-list-btn");
+
+            if (mode === 'cards') {
+                cardsView.classList.remove("hidden");
+                listView.classList.add("hidden");
+                searchContainer.classList.add("hidden");
+
+                cardsBtn.className = "px-3 py-1.5 text-xs font-semibold rounded-lg bg-teal-500 text-white transition-all shadow-sm";
+                listBtn.className = "px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all";
+            } else {
+                cardsView.classList.add("hidden");
+                listView.classList.remove("hidden");
+                searchContainer.classList.remove("hidden");
+
+                listBtn.className = "px-3 py-1.5 text-xs font-semibold rounded-lg bg-teal-500 text-white transition-all shadow-sm";
+                cardsBtn.className = "px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all";
+                renderListView();
+            }
+        }
+
+        // Render List View
+        function renderListView() {
+            const query = (document.getElementById("search-input").value || "").toLowerCase();
+            const grid = document.getElementById("cards-grid");
+            
+            let filtered = currentCategory === "Todos" 
+                ? RAW_DATA 
+                : RAW_DATA.filter(c => c.category === currentCategory);
+
+            if (query.trim() !== "") {
+                filtered = filtered.filter(c => 
+                    c.front.toLowerCase().includes(query) || 
+                    c.back.toLowerCase().includes(query) ||
+                    c.id.toString() === query
+                );
+            }
+
+            document.getElementById("list-results-info").innerText = `Exibindo ${filtered.length} de ${RAW_DATA.length} cartões`;
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full py-12 text-center text-slate-500">
+                        Nenhum cartão encontrado para a sua busca.
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = filtered.map(card => {
+                const isMastered = masteredCardIds.has(card.id);
+                return `
+                    <div class="bg-slate-800 border border-slate-700/80 rounded-2xl p-5 flex flex-col justify-between gap-4 hover:border-slate-600 transition-colors">
+                        <div>
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="text-[11px] font-semibold text-teal-400 bg-teal-500/10 px-2 py-0.5 rounded border border-teal-500/20">
+                                    ${card.category}
+                                </span>
+                                <span class="text-xs text-slate-500 font-mono">#${card.id}</span>
+                            </div>
+                            <h3 class="font-bold text-slate-100 text-sm mb-2">${card.front}</h3>
+                            <p class="text-xs text-slate-300 bg-slate-900/60 p-3 rounded-xl border border-slate-700/40 leading-relaxed">${card.back}</p>
+                        </div>
+
+                        <div class="flex justify-between items-center pt-2 border-t border-slate-700/40">
+                            <button onclick="toggleMasteredById(${card.id}, event)" class="text-xs font-medium flex items-center gap-1.5 ${isMastered ? 'text-emerald-400' : 'text-slate-400 hover:text-white'}">
+                                <span class="w-4 h-4 rounded-full border ${isMastered ? 'bg-emerald-500 border-emerald-400 text-slate-950 font-bold' : 'border-slate-500'} flex items-center justify-center text-[10px]">
+                                    ${isMastered ? '✓' : ''}
+                                </span>
+                                ${isMastered ? 'Aprendido' : 'Marcar Aprendido'}
+                            </button>
+
+                            <button onclick="openCardInStudy(${card.id})" class="text-xs text-teal-400 hover:underline">
+                                Estudo Individual →
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Open specific card in study mode
+        function openCardInStudy(id) {
+            const card = RAW_DATA.find(c => c.id === id);
+            if (!card) return;
+
+            filterCategory("Todos");
+            const index = activeDeck.findIndex(c => c.id === id);
+            if (index !== -1) {
+                currentIndex = index;
+            }
+            setViewMode("cards");
+            renderCurrentCard();
+        }
+
+        // Search Handler
+        function handleSearch() {
+            if (viewMode === 'list') {
+                renderListView();
+            }
+        }
+    </script>
+</body>
+</html>
